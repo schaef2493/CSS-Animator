@@ -14,15 +14,31 @@
     </head>
     <body>
         <div class="wrapper">
+            <div class="horizontalDivider"></div>
             <div id="inspector"></div>
             <div id="stage" data-bind='foreach: layers'>
                 <div class="animationElement" data-bind="attr: { id: 'layer' + id }"></div>
             </div>
         </div>
 
-        <div id="timeline"><div>
+        <div id="playhead">
+            <div id="playheadInner"></div>
+        </div>
+
+        <div id="timelineWrapper">
+            <div class="horizontalDivider"></div>
+            <div id="timeline" data-bind='foreach: layers'>
+                <div class="layerWrap">
+                    <div class="layerName">Layer <span data-bind="text: Number(id)+1"></span></div>
+                    <div class="layerTimeline" data-bind='foreach: keyframes'>
+                        <div class="keyframe" data-bind="style: { left: (percentage() * 99.4) + '%' }"></div>
+                    </div>
+                </div>
+            <div>
+        </div>
 
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.1.min.js"><\/script>')</script>
+        <script src="js/vendor/jquery-ui-1.10.3.custom.js"></script>
         <script src="js/vendor/underscore.js"></script>
         <script src="js/vendor/knockout.js"></script>
         <script src="js/main.js"></script>

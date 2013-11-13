@@ -157,9 +157,9 @@ function AnimationViewModel() {
 
 	// TODO: Make this number not hardcoded
 	self.length = ko.observable(5000); // milliseconds
-	self.playheadPosition = ko.observable(0);
+	self.playheadPosition = ko.observable(0); // some pixel measurement
 	self.playheadTime = ko.computed(function() {
-		return 0; // milliseconds
+		return self.playheadPosition * 1; // milliseconds
 	}, this);
 	self.layers = ko.observableArray([]);
 	self.numLayers = '0';
@@ -170,7 +170,7 @@ function AnimationViewModel() {
 		// Apply animation to element
 		var element = $('#layer' + self.numLayers);
 		if (typeof element != 'undefined') {
-			element.css('-webkit-animation', 'layer' + self.numLayers + ' ' + self.length() + 'ms');
+			element.css('-webkit-animation', 'layer' + self.numLayers + ' ' + self.length() + 'ms linear');
 			element.css('-webkit-animation-play-state', 'paused');
 		}
 
@@ -218,6 +218,17 @@ function AnimationViewModel() {
 		$('.animationElement').css('-webkit-animation-play-state', 'running');
 		setTimeout("$('.animationElement').css('-webkit-animation-play-state', 'paused')", 0)
 	}
+
+	// Bind to playhead drags
+	$('#playhead').draggable({
+		axis: "x",
+		drag: function(e) {
+			if ((e.pageX <= 342) || (e.pageX >= document.width - 10)) {
+				return false;
+			}
+		}
+	});
+
 }
 
 function testAnimation() {
