@@ -21,12 +21,16 @@
             </div>
         </div>
 
-        <div id="playhead">
-            <div id="playheadInner"></div>
-        </div>
-
         <div id="timelineWrapper">
             <div class="horizontalDivider"></div>
+
+            <div id="playheadWrapper">
+                <div id="playhead" data-bind="style: { left: ((playheadPosition()*100) + '%') }">
+                    <div id="playheadHandle"></div>
+                    <div id="playheadInner"></div>
+                </div>
+            </div>
+    
             <div id="timeline" data-bind='foreach: layers'>
                 <div class="layerWrap">
                     <div class="layerName">Layer <span data-bind="text: Number(id)+1"></span></div>

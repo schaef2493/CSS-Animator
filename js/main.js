@@ -157,9 +157,9 @@ function AnimationViewModel() {
 
 	// TODO: Make this number not hardcoded
 	self.length = ko.observable(5000); // milliseconds
-	self.playheadPosition = ko.observable(0); // some pixel measurement
+	self.playheadPosition = ko.observable(0); // [0..1]
 	self.playheadTime = ko.computed(function() {
-		return self.playheadPosition * 1; // milliseconds
+		return self.playheadPosition() * self.length(); // milliseconds
 	}, this);
 	self.layers = ko.observableArray([]);
 	self.numLayers = '0';
@@ -221,11 +221,33 @@ function AnimationViewModel() {
 
 	// Bind to playhead drags
 	$('#playhead').draggable({
+		handle: "#playheadHandle",
+		snap: "#timelineWrapper", 
+		snapMode: "inner",
+		containment: "#playheadWrapper",
+		scroll: false,
 		axis: "x",
 		drag: function(e) {
-			if ((e.pageX <= 342) || (e.pageX >= document.width - 10)) {
-				return false;
+			// Update playhead location
+			var newLeft = parseInt($(e.target).css('left'));
+			var maxWidth = parseInt($('#playheadWrapper').width());
+			var percentage = newLeft / maxWidth;
+
+			// Fix for right snap edge case
+			if (newLeft == maxWidth - 1) {
+				percentage = 1;
 			}
+
+			self.playheadPosition(percentage);
+
+			if (newLeft > ($(document).width()-340)) {
+				e.preventDefault();
+			}
+		},
+		stop: function(e) {
+			var temp = self.playheadPosition();
+			self.playheadPosition(0);
+			self.playheadPosition(temp);
 		}
 	});
 

@@ -75,7 +75,7 @@ textarea {
 
 #inspector {
     width: 340px;
-    height: 95%;
+    height: calc(100% - 30px);
     min-height: 400px;
     float: left;
     background: #2B2B2B;
@@ -86,17 +86,19 @@ textarea {
 #stage {
     position: relative;
     width: calc(100% - 340px);
-    height: 95%;
+    height: calc(100% - 30px);
     min-height: 400px;
     float: left;
     background: #363636;
 }
 
 #timelineWrapper {
+    position: relative;
     width: 100%;
     height: 35%;
     background: #363636;
-    overflow: scroll;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 .horizontalDivider {
@@ -108,13 +110,18 @@ textarea {
     box-shadow: inset 0 1px 0 #6e6e6e,0 2px 2px rgba(0,0,0,0.4);
 }
 
+#playheadWrapper {
+    position: absolute;
+    left: 340px;
+    right: 0px;
+    height: 93%;
+    margin-top: -23px;
+}
+
 #playhead {
     position: absolute;
-    width: 16px;
-    height: 34.8%;
-    left: 333px;
-    margin-top: 3px;
-    padding-left: 6px;
+    width: 1px;
+    height: 100%;
     z-index: 10;
     text-align: center;
     cursor: pointer;
@@ -122,8 +129,19 @@ textarea {
 
 #playheadInner {
     width: 1px;
-    height: 100%;
+    height: calc(100% + 9px);
+    margin-top: -1px;
+    margin-left: 1px;
     background: #EF9F27;
+}
+
+#playheadHandle {
+    width: 0; 
+    height: 0; 
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 11px solid #EF9F27;
+    margin-left: -9px;
 }
 
 .animationElement {
