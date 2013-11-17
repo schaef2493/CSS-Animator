@@ -85,6 +85,9 @@ ko.observable.fn.select = function (selector) {
    Base Entities
    ========================================================================== */
 
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
 function layer(id) {
 	var self = this;
 	self.id = id;
@@ -161,18 +164,16 @@ function AnimationViewModel() {
 	self.playheadTime = ko.computed(function() {
 		return self.playheadPosition() * self.length(); // milliseconds
 	}, this);
+	self.playheadAnimationStart = null;
+	self.timeLeftInAnimation = 0;
 	self.layers = ko.observableArray([]);
-	self.numLayers = '0';
+	self.numLayers = 0;
 
 	self.addLayer = function() {
 		self.layers.push(new layer(self.numLayers));
 
 		// Apply animation to element
-		var element = $('#layer' + self.numLayers);
-		if (typeof element != 'undefined') {
-			element.css('-webkit-animation', 'layer' + self.numLayers + ' ' + self.length() + 'ms linear');
-			element.css('-webkit-animation-play-state', 'paused');
-		}
+		self.resetAnimation();
 
 		self.numLayers++;
 	};
@@ -209,15 +210,70 @@ function AnimationViewModel() {
 	self.playAnimation = function() {
 		$('.animationElement').css('-webkit-animation-play-state', 'paused');
 		$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
-		setTimeout("$('.animationElement').css('-webkit-animation-play-state', 'running')", 0);
+		setTimeout(function() { 
+			$('.animationElement').css('-webkit-animation-play-state', 'running');
+			self.timeLeftInAnimation = self.length() - self.playheadTime();
+			
+			// Animate movement of playhead
+			requestAnimationFrame(self.animatePlayhead);
+		}, 0);
+		setTimeout(function() { self.stopAnimation() }, (self.length() - self.playheadTime()) * 1.1);
 	};
 
-	// Updates the stage based on the playhead position
-	self.seekAnimation = function() {
-		$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
-		$('.animationElement').css('-webkit-animation-play-state', 'running');
-		setTimeout("$('.animationElement').css('-webkit-animation-play-state', 'paused')", 0)
+	// Animates the playhead alongside the main animation
+	self.animatePlayhead = function(timestamp) {
+		if (self.playheadAnimationStart == null) {
+			self.playheadAnimationStart = timestamp;
+			var delta = 0;
+		} else {
+			var delta = timestamp - self.playheadAnimationStart;
+			self.playheadAnimationStart = timestamp;
+		}
+
+		self.playheadPosition(1 - (self.timeLeftInAnimation / self.length()));
+
+		// Update time left in animation
+		self.timeLeftInAnimation = self.timeLeftInAnimation - delta;
+		if (self.timeLeftInAnimation < 0) {
+			self.timeLeftInAnimation = 0;
+			self.playheadPosition(0);
+			self.playheadAnimationStart = null;
+		} else {
+			requestAnimationFrame(self.animatePlayhead);
+		}
+	};
+
+	// Resets animation
+	self.resetAnimation = function() {
+		$('.animationElement').css('-webkit-animation', '');
+		setTimeout(function() {
+			for (var i=0; i<=mainVM.numLayers; i++) {
+				$('#layer'+ i).css('-webkit-animation', 'layer' + i + ' ' + self.length() + 'ms linear running');
+				$('#layer'+ i).css('-webkit-animation-play-state', 'paused');
+			}
+		}, 0);
 	}
+
+	// Stops the animation & moves playhead to start
+	self.stopAnimation = function() {
+		self.resetAnimation();
+		self.playheadPosition(0);
+	}
+
+	// Updates the stage based on the playhead position
+	self.seekAnimationPostThrottle = function() {
+		$('.animationElement').addClass('invisible');
+		self.resetAnimation();
+		setTimeout(function() {
+			$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
+			$('.animationElement').css('-webkit-animation-play-state', 'running');
+			setTimeout("$('.animationElement').css('-webkit-animation-play-state', 'paused')", 0);
+			$('.animationElement').removeClass('invisible');
+		}, 5);
+	}
+
+	// Throttles number of seeks for performance
+	self.seekAnimation = _.throttle(self.seekAnimationPostThrottle, 250);
 
 	// Bind to playhead drags
 	$('#playhead').draggable({
@@ -243,6 +299,8 @@ function AnimationViewModel() {
 			if (newLeft > ($(document).width()-340)) {
 				e.preventDefault();
 			}
+
+			self.seekAnimation();
 		},
 		stop: function(e) {
 			var temp = self.playheadPosition();
@@ -258,7 +316,7 @@ function testAnimation() {
 	mainVM.layers()[0].addKeyframe(0);
 	mainVM.layers()[0].keyframes()[0].addAttribute('margin-left', '0px');
 	mainVM.layers()[0].addKeyframe(1);
-	mainVM.layers()[0].keyframes()[1].addAttribute('margin-left', '500px');
+	mainVM.layers()[0].keyframes()[1].addAttribute('margin-left', '710px');
 }
 
 var mainVM = new AnimationViewModel();
