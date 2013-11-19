@@ -15,14 +15,21 @@
     <body>
         <div class="wrapper">
             <div class="horizontalDivider"></div>
-            <div id="inspector"></div>
+            <div id="inspector" data-bind='foreach: selectedLayer().attributes'>
+                <div class="attributeWrap">
+                    <span data-bind="text: property"></span>:&nbsp;
+                    <span data-bind="text: currentValue"></span>
+                </div>
+            </div>
             <div id="stage" data-bind='foreach: layers'>
                 <div class="animationElement" data-bind="attr: { id: 'layer' + id }"></div>
             </div>
         </div>
 
         <div id="timelineWrapper">
-            <div class="horizontalDivider"></div>
+            <div class="horizontalDivider">
+                <span data-bind="click: addLayer" class="button newLayer">+ New Layer</span>
+            </div>
 
             <div id="playheadWrapper">
                 <div id="playhead" data-bind="style: { left: ((playheadPosition()*100) + '%') }">
@@ -32,7 +39,7 @@
             </div>
     
             <div id="timeline" data-bind='foreach: layers'>
-                <div class="layerWrap">
+                <div class="layerWrap" data-bind="click: $parent.setSelectedLayer">
                     <div class="layerName">Layer <span data-bind="text: Number(id)+1"></span></div>
                     <div class="layerTimeline" data-bind='foreach: keyframes'>
                         <div class="keyframe" data-bind="style: { left: (percentage() * 99.4) + '%' }"></div>

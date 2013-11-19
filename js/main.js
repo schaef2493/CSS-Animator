@@ -92,6 +92,20 @@ function layer(id) {
 	var self = this;
 	self.id = id;
 	self.keyframes = ko.observableArray([]);
+	self.attributes = ko.computed(function() {
+		var attrs = [];
+
+		for (var i=0; i<self.keyframes().length; i++) {
+			attrs = attrs.concat(self.keyframes()[i].attributes());
+		}
+
+		// Remove duplicates
+		attrs = _.uniq(attrs, function(item, key, attrs) {
+		    return item.property();
+		})
+
+		return attrs;
+	}, this);
 
 	self.addKeyframe = function(time) {
 		self.keyframes.push(new keyframe(time));
@@ -149,6 +163,31 @@ function attribute(property, value) {
 	var self = this;
 	self.property = ko.observable(property);
 	self.value = ko.observable(value);
+	self.currentValue = ko.observable(self.value());
+	
+	// Keep current value updated when value changes
+	self.value.subscribe(function() {
+		self.updateCurrentValue();
+	}, this);
+
+	// Keep current value updated when playhead moves
+	mainVM.playheadPosition.subscribe(function() {
+		self.updateCurrentValue();
+	}, this);
+
+	self.updateCurrentValue = function() {
+		// Get current value
+		var layerID = mainVM.selectedLayer().id;
+		var newValue = $('#layer' + layerID).css(self.property());
+
+		// Round long numbers for display
+		if (newValue.indexOf('px') != -1) {
+			newValue = newValue.replace('px', '');
+			newValue = Math.round(newValue) + 'px';
+		}
+
+		self.currentValue(newValue);
+	}
 }
 
 /* ==========================================================================
@@ -167,6 +206,7 @@ function AnimationViewModel() {
 	self.playheadAnimationStart = null;
 	self.timeLeftInAnimation = 0;
 	self.layers = ko.observableArray([]);
+	self.selectedLayer = ko.observableArray([]);
 	self.numLayers = 0;
 
 	self.addLayer = function() {
@@ -175,12 +215,18 @@ function AnimationViewModel() {
 		// Apply animation to element
 		self.resetAnimation();
 
+		// Set selected layer to new layer
+		self.selectedLayer(self.layers()[self.numLayers]);
 		self.numLayers++;
 	};
 
 	self.removeLayer = function(layer) {
 		$('#layer' + layer.id).remove();
 		self.layers.remove(layer);
+	};
+
+	self.setSelectedLayer = function(layer) {
+		self.selectedLayer(layer);
 	};
 
 	self.updateKeyframeAnimations = function() {
@@ -217,7 +263,7 @@ function AnimationViewModel() {
 			// Animate movement of playhead
 			requestAnimationFrame(self.animatePlayhead);
 		}, 0);
-		setTimeout(function() { self.stopAnimation() }, (self.length() - self.playheadTime()) * 1.1);
+		//setTimeout(function() { self.stopAnimation() }, (self.length() - self.playheadTime()) * 1.1);
 	};
 
 	// Animates the playhead alongside the main animation
@@ -233,11 +279,12 @@ function AnimationViewModel() {
 		self.playheadPosition(1 - (self.timeLeftInAnimation / self.length()));
 
 		// Update time left in animation
-		self.timeLeftInAnimation = self.timeLeftInAnimation - delta;
+		self.timeLeftInAnimation -= delta;
 		if (self.timeLeftInAnimation < 0) {
 			self.timeLeftInAnimation = 0;
 			self.playheadPosition(0);
 			self.playheadAnimationStart = null;
+			self.stopAnimation();
 		} else {
 			requestAnimationFrame(self.animatePlayhead);
 		}
@@ -258,7 +305,23 @@ function AnimationViewModel() {
 	self.stopAnimation = function() {
 		self.resetAnimation();
 		self.playheadPosition(0);
+		self.timeLeftInAnimation = 0;
+		self.playheadAnimationStart = null;
 	}
+
+	window.onkeydown = function(e) { 
+		// Space bar pressed
+		if (e.keyCode == 32) {
+			e.preventDefault();
+
+			if (self.timeLeftInAnimation == 0) {
+				self.playAnimation();
+			} else {
+				self.stopAnimation();
+			}
+			return false;
+		}
+	};
 
 	// Updates the stage based on the playhead position
 	self.seekAnimationPostThrottle = function() {
