@@ -25,7 +25,7 @@ ko.observable.fn.subscribeArray = function (callbacks) {
             switch (editItem.status) {
                 case 'added':
                     if (editItem.moved !== undefined) {
-                        if (move) move(editItem.value, editItem.index, editITem.moved);
+                        if (move) move(editItem.value, editItem.index, editItem.moved);
                     }
                     else {
                         if (add) add(editItem.value, editItem.index);
@@ -93,13 +93,29 @@ function layer(id) {
 	self.id = id;
 	self.keyframes = ko.observableArray([]);
 	self.attributes = ko.computed(function() {
+		var activeAttrs = [];
 		var attrs = [];
 
 		for (var i=0; i<self.keyframes().length; i++) {
+			// Identify active keyframe, if it exists
+			if (self.keyframes()[i].active()) {
+				activeAttrs = self.keyframes()[i].attributes();
+			}
+
+			// Collect all attributes
 			attrs = attrs.concat(self.keyframes()[i].attributes());
 		}
 
-		// Remove duplicates
+		// Keep the active attrs
+		if (activeAttrs != []) {	
+			for (var i=0; i<activeAttrs.length; i++) {
+				attrs = _.reject(attrs, function(el) { 
+					return (el.property() == activeAttrs[i].property()) && (el != activeAttrs[i]);
+				});
+			}
+		}
+
+		// Remove other duplicates
 		attrs = _.uniq(attrs, function(item, key, attrs) {
 		    return item.property();
 		})
@@ -107,17 +123,27 @@ function layer(id) {
 		return attrs;
 	}, this);
 
-	self.addKeyframe = function(time) {
-		self.keyframes.push(new keyframe(time));
+	self.addKeyframe = function(percentage) {
+		self.keyframes.push(new keyframe(percentage));
 	};
 
 	self.removeKeyframe = function(keyframe) {
 		self.keyframes.remove(keyframe);
 	};
 
-	self.updateKeyframeAnimation = function() {
-		//console.log('Preparing layer update');
+	self.addAttribute = function() {
+		for (var i=0; i<self.keyframes().length; i++) {
+			if (self.keyframes()[i].active()) {
+				self.keyframes()[i].addAttribute('', '');
+				return;
+			}
+		}
 
+		self.addKeyframe(mainVM.playheadPosition());
+		self.keyframes()[self.keyframes().length-1].addAttribute('', '');
+	};
+
+	self.updateKeyframeAnimation = function() {
 		var keyframes = _.sortBy(self.keyframes(), function(elem) { return elem.percentage(); });
 		var css = "";
 		var stylesheet = document.styleSheets[document.styleSheets.length - 1];
@@ -141,7 +167,6 @@ function layer(id) {
 		}
 
 		stylesheet.insertRule("@-webkit-keyframes layer" + self.id + " {" + css + "}", stylesheet.cssRules.length);
-		//console.log("@-webkit-keyframes layer" + self.id + " {" + css + "}");
 	};
 }
 
@@ -149,6 +174,9 @@ function keyframe(percentage) {
 	var self = this;
 	self.percentage = ko.observable(percentage); // range [0,1]
 	self.attributes = ko.observableArray([]);
+	self.active = ko.computed(function() {
+		return Math.abs(mainVM.playheadPosition() - self.percentage()) < .005;
+	}, this);
 
 	self.addAttribute = function(property, value) {
 		self.attributes.push(new attribute(property, value));
@@ -174,6 +202,10 @@ function attribute(property, value) {
 	mainVM.playheadPosition.subscribe(function() {
 		self.updateCurrentValue();
 	}, this);
+
+	// TODO: Need a button to begin a new keyframe/attribute next to each attr
+	// Need a way to detect changes to currentValue due to user input
+	// Need a way to display value, not currentValue, when on active keyframe
 
 	self.updateCurrentValue = function() {
 		// Get current value
@@ -263,7 +295,6 @@ function AnimationViewModel() {
 			// Animate movement of playhead
 			requestAnimationFrame(self.animatePlayhead);
 		}, 0);
-		//setTimeout(function() { self.stopAnimation() }, (self.length() - self.playheadTime()) * 1.1);
 	};
 
 	// Animates the playhead alongside the main animation
@@ -309,6 +340,7 @@ function AnimationViewModel() {
 		self.playheadAnimationStart = null;
 	}
 
+	// Allow spacebar to control playback
 	window.onkeydown = function(e) { 
 		// Space bar pressed
 		if (e.keyCode == 32) {
@@ -322,6 +354,14 @@ function AnimationViewModel() {
 			return false;
 		}
 	};
+
+	// Alow enter to create a new attribute
+	$('.attributeWrap input').bind('keypress', function(e) {
+		// Enter key pressed
+		if (e.keyCode == 32) {
+			self.selectedLayer().addAttribute('');
+		}
+	});
 
 	// Updates the stage based on the playhead position
 	self.seekAnimationPostThrottle = function() {
