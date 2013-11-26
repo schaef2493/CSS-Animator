@@ -179,7 +179,10 @@ function keyframe(percentage) {
 	}, this);
 
 	self.addAttribute = function(property, value) {
-		self.attributes.push(new attribute(property, value));
+		var newAttr = new attribute(property, value);
+		newAttr.parent = self;
+		newAttr.editingProperty(true);
+		self.attributes.push(newAttr);
 	};
 
 	self.removeAttribute = function(attribute) {
@@ -189,10 +192,16 @@ function keyframe(percentage) {
 
 function attribute(property, value) {
 	var self = this;
+	self.parent = null;
 	self.property = ko.observable(property);
 	self.value = ko.observable(value);
 	self.currentValue = ko.observable(self.value());
-	
+	self.editingProperty = ko.observable(false);
+	self.editingValue = ko.observable(false);
+	self.editing = ko.computed(function() {
+		return (self.editingProperty() || self.editingValue());
+	});
+
 	// Keep current value updated when value changes
 	self.value.subscribe(function() {
 		self.updateCurrentValue();
@@ -203,23 +212,74 @@ function attribute(property, value) {
 		self.updateCurrentValue();
 	}, this);
 
-	// TODO: Need a button to begin a new keyframe/attribute next to each attr
-	// Need a way to detect changes to currentValue due to user input
-	// Need a way to display value, not currentValue, when on active keyframe
+	self.editProperty = function() { this.editingProperty(true) };
+	
+	self.editValue = function() { this.editingValue(true) };
 
-	self.updateCurrentValue = function() {
-		// Get current value
-		var layerID = mainVM.selectedLayer().id;
-		var newValue = $('#layer' + layerID).css(self.property());
-
-		// Round long numbers for display
-		if (newValue.indexOf('px') != -1) {
-			newValue = newValue.replace('px', '');
-			newValue = Math.round(newValue) + 'px';
+	self.save = function() {
+		// New keyframe needed?
+		if (!self.parent.active()) {
+			mainVM.selectedLayer().addKeyframe(mainVM.playheadPosition());
+			var numKeyframes = mainVM.selectedLayer().keyframes().length;
+			mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue());
+		} else {
+			self.value(self.currentValue());
 		}
 
-		self.currentValue(newValue);
-	}
+		// Update stage
+		mainVM.updateKeyframeAnimations();
+		setTimeout(function() { mainVM.seekAnimation(); }, 0);
+		setTimeout(function() { self.updateCurrentValue(); }, 0);
+	};
+
+	self.updateCurrentValue = function() {
+		if (self.parent.active()) {
+			self.currentValue(self.value());
+		} else {
+			// Get current value
+			var layerID = mainVM.selectedLayer().id;
+			var newValue = $('#layer' + layerID).css(self.property());
+
+			// Round long numbers for display
+			if (newValue.indexOf('px') != -1) {
+				newValue = newValue.replace('px', '');
+				newValue = Math.round(newValue) + 'px';
+			}
+
+			self.currentValue(newValue);
+		}
+	};
+
+	self.tab = function(data, e) {
+		// Tab key pressed
+		if (e.keyCode == 9) {
+            self.editingProperty(false);
+            self.editingValue(true);
+            return false;
+        }
+
+        // Enter key pressed
+		if (e.keyCode == 32) {
+            self.editingProperty(false);
+            self.editingValue(false);
+            self.save();
+            return false;
+        };
+
+        return true;
+	};
+
+	self.enter = function(data, e) {
+		// Enter key pressed
+		if (e.keyCode == 13) {
+            self.editingProperty(false);
+            self.editingValue(false);
+            self.save();
+            return false;
+        };
+
+        return true;
+	};
 }
 
 /* ==========================================================================
@@ -344,6 +404,11 @@ function AnimationViewModel() {
 	window.onkeydown = function(e) { 
 		// Space bar pressed
 		if (e.keyCode == 32) {
+			// Don't continue if attribute editor is active
+			if (document.activeElement.type == "text") {
+				return;
+			}
+			
 			e.preventDefault();
 
 			if (self.timeLeftInAnimation == 0) {
@@ -356,12 +421,18 @@ function AnimationViewModel() {
 	};
 
 	// Alow enter to create a new attribute
-	$('.attributeWrap input').bind('keypress', function(e) {
-		// Enter key pressed
-		if (e.keyCode == 32) {
-			self.selectedLayer().addAttribute('');
-		}
-	});
+	// $('.attributeWrap input').bind('keypress', function(e) {
+	// 	// Enter key pressed
+	// 	if (e.keyCode == 32) {
+	// 		self.selectedLayer().addAttribute('');
+	// 	}
+	// });
+
+	// Automatically resize with of attribute inputs
+	function resizeInput() {
+    	$(this).attr('size', $(this).val().length);
+	}
+	$(document).on('keyup', '.attributeWrap input', resizeInput);
 
 	// Updates the stage based on the playhead position
 	self.seekAnimationPostThrottle = function() {

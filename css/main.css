@@ -160,6 +160,10 @@ textarea {
     border-bottom: 1px solid black;
 }
 
+.layerWrap.active {
+    background: #212021;
+}
+
 .layerName {
     width: 340px;
     height: 100%;
@@ -190,20 +194,50 @@ textarea {
 }
 
 .attributeWrap {
+    position: relative;
     width: 100%;
-    height: 40px;
+    height: 49px;
     background: #2B2B2B;
     border-bottom: 1px solid black;
     padding-top: 8px;
     padding-left: 15px;
+    padding-right: 15px;
+    white-space: nowrap;
+    overflow-y: scroll;
 }
 
 .attributeWrap input {
     border: none;
-    background: none;
+    background: #212021;
     color: #FFF;
     outline: 0px;
-    width: 85px;
+    padding: 5px 0px 5px 8px;
+    border-radius: 5px;
+}
+
+.attributeWrap span {
+    padding: 5px 0px 5px 8px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.saveBtn {
+    position: absolute;
+    right: 15px;
+    top: 14px;
+    width: 51px;
+    height: 21px;
+    border-radius: 4px;
+    background: #212021;
+    color: #504E50;
+    text-align: center;
+    font-size: 10pt;
+    padding-top: 2px;
+}
+
+.saveBtn.active {
+    background: #27ae60;
+    color: #FFF;
 }
 
 .button {

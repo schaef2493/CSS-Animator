@@ -19,8 +19,15 @@
             </div>
             <div id="inspector" data-bind='foreach: selectedLayer().attributes'>
                 <div class="attributeWrap">
-                    <input data-bind="value: property" /></span>:
-                    <input data-bind="value: currentValue" />
+                    <!-- <input data-bind="value: property, hasFocus: isSelected" />:
+                    <input data-bind="value: currentValue, hasFocus: isSelected" />
+                    <div class="saveBtn button" data-bind="visible: isSelected">Save</div> -->
+
+                    <span data-bind="visible: !editingProperty(), text: property, click: editProperty"></span>
+                    <input data-bind="visible: editingProperty(), value: property, hasFocus: editingProperty, event: { keydown: tab }" size="10" />:
+                    <span data-bind="visible: !editingValue(), text: currentValue, click: editValue"></span>
+                    <input data-bind="visible: editingValue(), value: currentValue, hasFocus: editingValue, event: { keydown: enter }" size="10"/>
+                    <div class="saveBtn button" data-bind="css: { active: editing }, click: save">Save</div>
                 </div>
             </div>
             <div id="stage" data-bind='foreach: layers'>
@@ -41,7 +48,7 @@
             </div>
     
             <div id="timeline" data-bind='foreach: layers'>
-                <div class="layerWrap" data-bind="click: $parent.setSelectedLayer">
+                <div class="layerWrap" data-bind="click: $parent.setSelectedLayer, css: { active: (id === $root.selectedLayer().id) }">
                     <div class="layerName">Layer <span data-bind="text: Number(id)+1"></span></div>
                     <div class="layerTimeline" data-bind='foreach: keyframes'>
                         <div class="keyframe" data-bind="style: { left: (percentage() * 99.4) + '%' }, css: { active: active }"></div>
