@@ -1,87 +1,4 @@
 /* ==========================================================================
-   Nested Knockout.js Subscriptions
-   http://stackoverflow.com/questions/13980753/how-to-subscribe-to-observable-in-observablearray
-   ========================================================================== */
-
-ko.observable.fn.subscribeArray = function (callbacks) {
-    // Takes three callbacks, and calls them whenever an item is added, deleted or moved in the array.
-    
-    var add, del, move;
-    if (typeof callbacks === "function") {
-        add = callbacks;
-    }
-    else {
-        add = callbacks.added; // (item, newIndex)
-        del = callbacks.deleted; // (item, oldIndex)
-        move = callbacks.moved; // (item, oldIndex, newIndex)
-    }
-
-    var self = this,
-        lastValue = self().slice();
-    return self.subscribe(function (newValue) {
-        var editScript = ko.utils.compareArrays(lastValue, newValue);
-        lastValue = newValue.slice();
-        ko.utils.arrayForEach(editScript, function (editItem) {
-            switch (editItem.status) {
-                case 'added':
-                    if (editItem.moved !== undefined) {
-                        if (move) move(editItem.value, editItem.index, editItem.moved);
-                    }
-                    else {
-                        if (add) add(editItem.value, editItem.index);
-                    }
-                    break;
-                case 'deleted':
-                    if (editItem.moved === undefined) {
-                        if (del) del(editItem.value, editItem.index);
-                    }
-                    break;
-            }
-        });
-    });
-}
-
-ko.observable.fn.select = function (selector) {
-    // Takes one callback, and calls it whenever an item is added to the array. It expects the callback
-    // to return a subscription, wich is disposed of when the item is removed.
-
-    var self = this,
-        value = self();
-    if (value.length === undefined) {
-        // Not an array. Do a normal subscription, and call the selector immediately.
-        var sub = self.subscribe(selector);
-        selector(value);
-        return sub;
-    }
-
-    var childSubscriptions = ko.utils.arrayMap(value, selector),
-        subscription = self.subscribeArray({
-            'added': function (item, index) {
-                var sub = selector(item);
-                childSubscriptions.splice(index, 0, sub);
-            },
-            'deleted': function (item, index) {
-                var sub = childSubscriptions[index];
-                childSubscriptions.splice(index, 1);
-                sub.dispose();
-            },
-            'moved': function (item, index, index2) {
-                var sub = childSubscriptions[index];
-                childSubscriptions.splice(index,1);
-                childSubscriptions.splice(index2,0,sub);
-            }
-        }),
-        originalDispose = subscription.dispose;
-    subscription.dispose = function () {
-        ko.utils.arrayForEach(childSubscriptions, function (sub) {
-            if (sub && sub.dispose) sub.dispose();
-        });
-        originalDispose.apply(this, arguments);
-    }
-    return subscription;
-}
-
-/* ==========================================================================
    Base Entities
    ========================================================================== */
 
@@ -105,8 +22,6 @@ function layer(id) {
 			// Collect all attributes
 			attrs = attrs.concat(self.keyframes()[i].attributes());
 		}
-
-		console.log([activeAttrs, attrs]);
 
 		// Keep the active attrs
 		if (activeAttrs != []) {	
@@ -137,6 +52,17 @@ function layer(id) {
 		setTimeout(function() { mainVM.seekAnimation(); }, 10);
 	};
 
+	self.removeAttribute = function(attribute) {
+		for (var i=0; i<self.keyframes().length; i++) {
+			for (var n=0; n<self.keyframes()[i].attributes().length; n++) {
+				if (self.keyframes()[i].attributes()[n].property() == attribute.property()) {
+					self.keyframes()[i].removeAttribute(self.keyframes()[i].attributes()[n]);
+				}
+			}
+		}
+		mainVM.updateKeyframeAnimations();
+	};
+
 	self.addAttribute = function() {
 		for (var i=0; i<self.keyframes().length; i++) {
 			if (self.keyframes()[i].active()) {
@@ -163,7 +89,6 @@ function layer(id) {
 				stylesheet.deleteRule(i);
 			}
 		}
-
 
 		// Create new keyframe animation
 		for (var i=0; i<keyframes.length; i++) {
@@ -266,9 +191,14 @@ function keyframe(percentage) {
 		self.attributes.push(newAttr);
 	};
 
+	self.removeAttribute = function(attribute) {
+		self.attributes.remove(attribute);
+	}
+
 	self.toggleAttribute = function(attribute) {
 		if (self.active()) {
 			self.attributes.remove(attribute);
+			mainVM.updateKeyframeAnimations();
 		} else {
 			attribute.save();
 		}
@@ -302,11 +232,24 @@ function attribute(property, value) {
 	self.editValue = function() { this.editingValue(true) };
 
 	self.save = function() {
+		console.log('save!');
 		// New keyframe needed?
 		if (!self.parent().active()) {
-			mainVM.selectedLayer().addKeyframe(mainVM.playheadPosition());
-			var numKeyframes = mainVM.selectedLayer().keyframes().length;
-			mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue());
+			// Find active keyframe
+			var activeFound = false;
+			for (var i=0; i<mainVM.selectedLayer().keyframes().length; i++) {
+				if (mainVM.selectedLayer().keyframes()[i].active()) {
+					mainVM.selectedLayer().keyframes()[i].addAttribute(self.property(), self.currentValue());
+					activeFound = true;
+					break;
+				}
+			}
+
+			if (!activeFound) {
+ 				mainVM.selectedLayer().addKeyframe(mainVM.playheadPosition());
+				var numKeyframes = mainVM.selectedLayer().keyframes().length;
+				mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue());
+			}
 		} else {
 			self.value(self.currentValue());
 		}
@@ -346,28 +289,10 @@ function attribute(property, value) {
             return false;
         }
 
-        // Enter key pressed
-		if (e.keyCode == 13) {
-            self.save();
-            return false;
-        };
-
         return true;
 	};
 
 	self.valKeypress = function(data, e) {
-		// Tab key pressed
-		if (e.keyCode == 9) {
-            self.save();
-            return false;
-        }
-
-        // Enter key pressed
-		if (e.keyCode == 13) {
-            self.save();
-            return false;
-        };
-
         return true;
 	};
 }
@@ -436,7 +361,7 @@ function AnimationViewModel() {
 
 	self.updateKeyframeAnimations = function() {
 		// Remove empty keyframes
-		if (self.selectedLayer().length > 1) {
+		if (!$.isArray(self.selectedLayer())) {
 			for (var i=0; i<self.selectedLayer().keyframes().length; i++) {
 				if (self.selectedLayer().keyframes()[i].attributes().length == 0) {
 					self.selectedLayer().removeKeyframe(self.selectedLayer().keyframes()[i])
@@ -451,16 +376,8 @@ function AnimationViewModel() {
 	};
 
 	// Subscribe to changes on layers, keyframes, attributes
-	self.layers.select(function(layer) {
-	    self.updateKeyframeAnimations();
-	    
-	    return layer.keyframes.select(function (keyframe) {
-	    	self.updateKeyframeAnimations();
-	        
-	        return keyframe.attributes.select(function (attribute) {
-	            self.updateKeyframeAnimations();
-	        });
-	    });
+	self.layers.watch({ recurse: true }, function (params, trigger) {
+		self.updateKeyframeAnimations();
 	});
 
 	// Plays the animation starting at the playhead

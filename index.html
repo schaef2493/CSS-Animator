@@ -24,7 +24,7 @@
                     <input data-bind="visible: editingProperty(), value: property, hasFocus: editingProperty, event: { keydown: propKeypress }" size="10" />:
                     <span data-bind="visible: !editingValue(), text: currentValue, click: editValue"></span>
                     <input data-bind="visible: editingValue(), value: currentValue, hasFocus: editingValue, event: { keydown: valKeypress }" size="10"/>
-                    <div class="deleteBtn button" data-bind="visible: editing() == false">x</div>
+                    <div class="deleteBtn button" data-bind="visible: editing() == false, click: $root.selectedLayer().removeAttribute">x</div>
                     <div class="saveBtn button" data-bind="css: { active: editing }, click: save">Save</div>
                 </div>
             </div>
@@ -36,8 +36,8 @@
         <div id="timelineWrapper">
             <div class="horizontalDivider">
                 <span data-bind="click: addLayer" class="button newLayer">+ New Layer</span>
-                <span data-bind="click: playAnimation, css: { disabled: timeLeftInAnimation() > 0 }" class="button play">Play</span>
-                <span data-bind="click: stopAnimation, css: { disabled: timeLeftInAnimation() == 0 }" class="button stop">Stop</span>
+                <span data-bind="click: playAnimation, css: { disabled: timeLeftInAnimation() > 0 }" class="button play">&#9654;</span>
+                <span data-bind="click: stopAnimation, css: { disabled: timeLeftInAnimation() == 0 }" class="button stop">&#9632;</span>
             </div>
 
             <div id="playheadWrapper">
@@ -61,6 +61,7 @@
         <script src="js/vendor/jquery-ui-1.10.3.custom.js"></script>
         <script src="js/vendor/underscore.js"></script>
         <script src="js/vendor/knockout.js"></script>
+        <script src="js/vendor/knockout.reactor.js"></script>
         <script src="js/main.js"></script>
     </body>
 </html>

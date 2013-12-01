@@ -261,7 +261,7 @@ textarea {
     width: 51px;
     height: 21px;
     border-radius: 4px;
-    background: #27ae60;
+    background: #A0A0A0;
     color: #FFF;
     text-align: center;
     font-size: 10pt;
@@ -292,13 +292,21 @@ textarea {
     cursor: pointer;
 }
 
-.button.newLayer, .button.play, .button.stop {
+.button.newLayer, .button.play {
     font-size: 10pt;
     color: #A0A0A0;
 }
 
+.button.stop {
+    position: absolute;
+    color: #A0A0A0;
+    font-size: 23pt;
+    top: -8px;
+    margin-left: 5px;
+}
+
 .button.play {
-    margin-left: 165px;
+    margin-left: 195px;
 }
 
 .button.stop {
