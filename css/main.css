@@ -65,6 +65,12 @@ textarea {
 
 * {
     box-sizing: border-box;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .wrapper {
@@ -193,6 +199,14 @@ textarea {
     box-shadow: 0px 0px 13px 2px #9b59b6;
 }
 
+.keyframe.selected {
+    background: #512F60;
+}
+
+.keyframe.selected.active {
+    box-shadow: 0px 0px 13px 2px #512F60;
+}
+
 .attributeWrap {
     position: relative;
     width: 100%;
@@ -200,7 +214,7 @@ textarea {
     background: #2B2B2B;
     border-bottom: 1px solid black;
     padding-top: 8px;
-    padding-left: 15px;
+    padding-left: 35px;
     padding-right: 15px;
     white-space: nowrap;
     overflow-y: scroll;
@@ -221,6 +235,25 @@ textarea {
     display: inline-block;
 }
 
+.light {
+    position: absolute;
+    left: 13px;
+    top: 17px;
+    width: 15px;
+    height: 15px;
+    border-radius: 15px;
+    border: 2px solid #000;
+    color: #FFF;
+    text-align: center;
+    font-size: 10pt;
+    padding-top: 2px;
+}
+
+.light.active {
+    background: #EF9F27;
+    border: 0px;
+}
+
 .saveBtn {
     position: absolute;
     right: 15px;
@@ -228,16 +261,31 @@ textarea {
     width: 51px;
     height: 21px;
     border-radius: 4px;
-    background: #212021;
-    color: #504E50;
+    background: #27ae60;
+    color: #FFF;
     text-align: center;
     font-size: 10pt;
     padding-top: 2px;
+    opacity: 0;
 }
 
 .saveBtn.active {
-    background: #27ae60;
+    opacity: 1;
+}
+
+.deleteBtn {
+    position: absolute;
+    right: 15px;
+    top: 14px;
+    width: 23px;
+    height: 23px;
+    border-radius: 4px;
+    background: #212021;
     color: #FFF;
+    text-align: center;
+    font-size: 10pt;
+    padding-top: 2px;
+    z-index: 1000;
 }
 
 .button {

@@ -106,6 +106,8 @@ function layer(id) {
 			attrs = attrs.concat(self.keyframes()[i].attributes());
 		}
 
+		console.log([activeAttrs, attrs]);
+
 		// Keep the active attrs
 		if (activeAttrs != []) {	
 			for (var i=0; i<activeAttrs.length; i++) {
@@ -129,6 +131,10 @@ function layer(id) {
 
 	self.removeKeyframe = function(keyframe) {
 		self.keyframes.remove(keyframe);
+
+		// Update stage
+		mainVM.updateKeyframeAnimations();
+		setTimeout(function() { mainVM.seekAnimation(); }, 10);
 	};
 
 	self.addAttribute = function() {
@@ -145,28 +151,102 @@ function layer(id) {
 
 	self.updateKeyframeAnimation = function() {
 		var keyframes = _.sortBy(self.keyframes(), function(elem) { return elem.percentage(); });
-		var css = "";
+		var animations = "";
+		var singles = "";
+		var lastVals = {};
+		var firstVals = {};
 		var stylesheet = document.styleSheets[document.styleSheets.length - 1];
 
 		// Delete existing keyframe animation
 		for (var i=0; i<stylesheet.cssRules.length; i++) {
-			if (stylesheet.cssRules[i].name == "layer" + self.id) {
+			if ((stylesheet.cssRules[i].name == "layer" + self.id) || (stylesheet.cssRules[i].selectorText == "#layer" + self.id)) {
 				stylesheet.deleteRule(i);
 			}
 		}
 
+
 		// Create new keyframe animation
 		for (var i=0; i<keyframes.length; i++) {
-			css += " " + (keyframes[i].percentage() * 100) + "% { ";
+			if ((keyframes[i].percentage() != 0) && (keyframes[i].percentage() != 1)) {
+				animations += " " + (keyframes[i].percentage() * 100) + "% { ";
 
-			for (var n=0; n<keyframes[i].attributes().length; n++) {
-				css += keyframes[i].attributes()[n].property() + ": " + keyframes[i].attributes()[n].value() + "; ";
+				for (var n=0; n<keyframes[i].attributes().length; n++) {
+					if (!self.attributeIsSingle(keyframes[i].attributes()[n])) {
+						animations += keyframes[i].attributes()[n].property() + ": " + keyframes[i].attributes()[n].value() + "; ";
+						
+						lastVals[keyframes[i].attributes()[n].property()] = keyframes[i].attributes()[n].value();
+						
+						if (!firstVals.hasOwnProperty(keyframes[i].attributes()[n].property())) {
+							firstVals[keyframes[i].attributes()[n].property()] = keyframes[i].attributes()[n].value();
+						}
+					} else {
+						singles += keyframes[i].attributes()[n].property() + ": " + keyframes[i].attributes()[n].value() + "; ";
+					}
+				}
+
+				animations += "} ";
+			} else {
+				for (var n=0; n<keyframes[i].attributes().length; n++) {
+					if (!self.attributeIsSingle(keyframes[i].attributes()[n])) {
+						
+						if (keyframes[i].percentage() == 0) {
+							firstVals[keyframes[i].attributes()[n].property()] = keyframes[i].attributes()[n].value();
+						} else {
+							lastVals[keyframes[i].attributes()[n].property()] = keyframes[i].attributes()[n].value();
+						}
+
+					} else {
+						singles += keyframes[i].attributes()[n].property() + ": " + keyframes[i].attributes()[n].value() + "; ";
+					}
+				}
 			}
-
-			css += "} ";
 		}
 
-		stylesheet.insertRule("@-webkit-keyframes layer" + self.id + " {" + css + "}", stylesheet.cssRules.length);
+		// Append first vals in 0% keyframe
+		var firstValsCSS = "";
+		firstValsCSS += " 0% { ";
+		for (var property in firstVals) {
+		    if (firstVals.hasOwnProperty(property)) {
+		        firstValsCSS += property + ": " + firstVals[property] + "; ";
+		    }
+		}
+		firstValsCSS += "} ";
+		animations = firstValsCSS + animations;
+
+		// Append last vals in 100% keyframe
+		animations += " 100% { ";
+		for (var property in lastVals) {
+		    if (lastVals.hasOwnProperty(property)) {
+		        animations += property + ": " + lastVals[property] + "; ";
+		    }
+		}
+		animations += "} ";
+
+		stylesheet.insertRule("@-webkit-keyframes layer" + self.id + " {" + animations + "}", stylesheet.cssRules.length);
+		
+		if (singles != "") {
+			stylesheet.insertRule("#layer" + self.id + " {" + singles + "}", stylesheet.cssRules.length);
+		}
+	};
+
+	self.attributeIsSingle = function(attribute) {
+		var attr = attribute.property();
+		var keyframes = self.keyframes();
+		var count = 0;
+
+		for (var i=0; i<keyframes.length; i++) {
+			for (var n=0; n<keyframes[i].attributes().length; n++) {
+				if (keyframes[i].attributes()[n].property() == attr) {
+					count++;
+				}
+			}
+		}
+
+		if (count == 1) {
+			return true;
+		} else {
+			return false;
+		}
 	};
 }
 
@@ -177,22 +257,27 @@ function keyframe(percentage) {
 	self.active = ko.computed(function() {
 		return Math.abs(mainVM.playheadPosition() - self.percentage()) < .005;
 	}, this);
+	self.selected = ko.observable(false);
 
 	self.addAttribute = function(property, value) {
 		var newAttr = new attribute(property, value);
-		newAttr.parent = self;
+		newAttr.parent(self);
 		newAttr.editingProperty(true);
 		self.attributes.push(newAttr);
 	};
 
-	self.removeAttribute = function(attribute) {
-		self.attributes.remove(attribute);
+	self.toggleAttribute = function(attribute) {
+		if (self.active()) {
+			self.attributes.remove(attribute);
+		} else {
+			attribute.save();
+		}
 	}
 }
 
 function attribute(property, value) {
 	var self = this;
-	self.parent = null;
+	self.parent = ko.observable(null);
 	self.property = ko.observable(property);
 	self.value = ko.observable(value);
 	self.currentValue = ko.observable(self.value());
@@ -218,7 +303,7 @@ function attribute(property, value) {
 
 	self.save = function() {
 		// New keyframe needed?
-		if (!self.parent.active()) {
+		if (!self.parent().active()) {
 			mainVM.selectedLayer().addKeyframe(mainVM.playheadPosition());
 			var numKeyframes = mainVM.selectedLayer().keyframes().length;
 			mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue());
@@ -226,14 +311,18 @@ function attribute(property, value) {
 			self.value(self.currentValue());
 		}
 
+		// Disable editing
+		self.editingProperty(false);
+		self.editingValue(false);
+
 		// Update stage
 		mainVM.updateKeyframeAnimations();
-		setTimeout(function() { mainVM.seekAnimation(); }, 0);
-		setTimeout(function() { self.updateCurrentValue(); }, 0);
+		setTimeout(function() { mainVM.seekAnimation(); }, 10);
+		setTimeout(function() { self.updateCurrentValue(); }, 10);
 	};
 
 	self.updateCurrentValue = function() {
-		if (self.parent.active()) {
+		if (self.parent().active()) {
 			self.currentValue(self.value());
 		} else {
 			// Get current value
@@ -250,18 +339,15 @@ function attribute(property, value) {
 		}
 	};
 
-	self.tab = function(data, e) {
+	self.propKeypress = function(data, e) {
 		// Tab key pressed
 		if (e.keyCode == 9) {
-            self.editingProperty(false);
             self.editingValue(true);
             return false;
         }
 
         // Enter key pressed
-		if (e.keyCode == 32) {
-            self.editingProperty(false);
-            self.editingValue(false);
+		if (e.keyCode == 13) {
             self.save();
             return false;
         };
@@ -269,11 +355,15 @@ function attribute(property, value) {
         return true;
 	};
 
-	self.enter = function(data, e) {
-		// Enter key pressed
+	self.valKeypress = function(data, e) {
+		// Tab key pressed
+		if (e.keyCode == 9) {
+            self.save();
+            return false;
+        }
+
+        // Enter key pressed
 		if (e.keyCode == 13) {
-            self.editingProperty(false);
-            self.editingValue(false);
             self.save();
             return false;
         };
@@ -293,11 +383,16 @@ function AnimationViewModel() {
 	self.length = ko.observable(5000); // milliseconds
 	self.playheadPosition = ko.observable(0); // [0..1]
 	self.playheadTime = ko.computed(function() {
-		return self.playheadPosition() * self.length(); // milliseconds
+		if (self.playheadPosition() == 1) {
+			return .9999 * self.length(); // milliseconds
+		} else {
+			return self.playheadPosition() * self.length(); // milliseconds
+		}
 	}, this);
 	self.playheadAnimationStart = null;
 	self.timeLeftInAnimation = ko.observable(0);
 	self.layers = ko.observableArray([]);
+	self.selectedKeyframe = ko.observable(null);
 	self.selectedLayer = ko.observableArray([]);
 	self.numLayers = 0;
 
@@ -315,13 +410,40 @@ function AnimationViewModel() {
 	self.removeLayer = function(layer) {
 		$('#layer' + layer.id).remove();
 		self.layers.remove(layer);
+
+		// Update stage
+		self.updateKeyframeAnimations();
+		setTimeout(function() { self.seekAnimation(); }, 10);
 	};
 
 	self.setSelectedLayer = function(layer) {
 		self.selectedLayer(layer);
 	};
 
+	self.setSelectedKeyframe = function(keyframe) {
+		if (self.selectedKeyframe() != null) {
+			self.selectedKeyframe().selected(false);
+		}
+
+		if (self.selectedKeyframe() == keyframe) {
+			keyframe.selected(false);
+			self.selectedKeyframe(null);
+		} else {
+			keyframe.selected(true);
+			self.selectedKeyframe(keyframe);
+		}
+	}
+
 	self.updateKeyframeAnimations = function() {
+		// Remove empty keyframes
+		if (self.selectedLayer().length > 1) {
+			for (var i=0; i<self.selectedLayer().keyframes().length; i++) {
+				if (self.selectedLayer().keyframes()[i].attributes().length == 0) {
+					self.selectedLayer().removeKeyframe(self.selectedLayer().keyframes()[i])
+				}
+			}
+		}
+
 		var layers = self.layers();
 		for (var i=0; i<layers.length; i++) {
 	    	layers[i].updateKeyframeAnimation();
@@ -330,15 +452,12 @@ function AnimationViewModel() {
 
 	// Subscribe to changes on layers, keyframes, attributes
 	self.layers.select(function(layer) {
-	    //console.log('Layer updated');
 	    self.updateKeyframeAnimations();
 	    
 	    return layer.keyframes.select(function (keyframe) {
-	    	//console.log('Keyframe updated');
 	    	self.updateKeyframeAnimations();
 	        
 	        return keyframe.attributes.select(function (attribute) {
-	            //console.log('Attribute updated');
 	            self.updateKeyframeAnimations();
 	        });
 	    });
@@ -400,7 +519,7 @@ function AnimationViewModel() {
 		self.playheadAnimationStart = null;
 	}
 
-	// Allow spacebar to control playback
+	// Allow keypresses to control app
 	window.onkeydown = function(e) { 
 		// Space bar pressed
 		if (e.keyCode == 32) {
@@ -416,6 +535,23 @@ function AnimationViewModel() {
 			} else {
 				self.stopAnimation();
 			}
+
+			return false;
+		}
+
+		// Backspace/delete pressed
+		if ((e.keyCode == 8) || (e.keyCode == 46)) {
+			// Don't continue if attribute editor is active
+			if (document.activeElement.type == "text") {
+				return;
+			}
+
+			// Delete selectedKeyframe
+			if (self.selectedKeyframe() != null) {
+				self.selectedLayer().removeKeyframe(self.selectedKeyframe());
+				self.selectedKeyframe(null);
+			}
+
 			return false;
 		}
 	};
