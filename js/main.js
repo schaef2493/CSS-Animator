@@ -296,7 +296,7 @@ function AnimationViewModel() {
 		return self.playheadPosition() * self.length(); // milliseconds
 	}, this);
 	self.playheadAnimationStart = null;
-	self.timeLeftInAnimation = 0;
+	self.timeLeftInAnimation = ko.observable(0);
 	self.layers = ko.observableArray([]);
 	self.selectedLayer = ko.observableArray([]);
 	self.numLayers = 0;
@@ -350,7 +350,7 @@ function AnimationViewModel() {
 		$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
 		setTimeout(function() { 
 			$('.animationElement').css('-webkit-animation-play-state', 'running');
-			self.timeLeftInAnimation = self.length() - self.playheadTime();
+			self.timeLeftInAnimation(self.length() - self.playheadTime());
 			
 			// Animate movement of playhead
 			requestAnimationFrame(self.animatePlayhead);
@@ -367,12 +367,12 @@ function AnimationViewModel() {
 			self.playheadAnimationStart = timestamp;
 		}
 
-		self.playheadPosition(1 - (self.timeLeftInAnimation / self.length()));
+		self.playheadPosition(1 - (self.timeLeftInAnimation() / self.length()));
 
 		// Update time left in animation
-		self.timeLeftInAnimation -= delta;
-		if (self.timeLeftInAnimation < 0) {
-			self.timeLeftInAnimation = 0;
+		self.timeLeftInAnimation(self.timeLeftInAnimation() - delta);
+		if (self.timeLeftInAnimation() < 0) {
+			self.timeLeftInAnimation(0);
 			self.playheadPosition(0);
 			self.playheadAnimationStart = null;
 			self.stopAnimation();
@@ -396,7 +396,7 @@ function AnimationViewModel() {
 	self.stopAnimation = function() {
 		self.resetAnimation();
 		self.playheadPosition(0);
-		self.timeLeftInAnimation = 0;
+		self.timeLeftInAnimation(0);
 		self.playheadAnimationStart = null;
 	}
 
@@ -411,7 +411,7 @@ function AnimationViewModel() {
 			
 			e.preventDefault();
 
-			if (self.timeLeftInAnimation == 0) {
+			if (self.timeLeftInAnimation() == 0) {
 				self.playAnimation();
 			} else {
 				self.stopAnimation();

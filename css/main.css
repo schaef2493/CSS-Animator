@@ -244,9 +244,21 @@ textarea {
     cursor: pointer;
 }
 
-.button.newLayer {
+.button.newLayer, .button.play, .button.stop {
     font-size: 10pt;
     color: #A0A0A0;
+}
+
+.button.play {
+    margin-left: 165px;
+}
+
+.button.stop {
+    margin-left: 5px;
+}
+
+.button.play.disabled, .button.stop.disabled {
+    opacity: .3;
 }
 
 /* ==========================================================================

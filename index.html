@@ -38,6 +38,8 @@
         <div id="timelineWrapper">
             <div class="horizontalDivider">
                 <span data-bind="click: addLayer" class="button newLayer">+ New Layer</span>
+                <span data-bind="click: playAnimation, css: { disabled: timeLeftInAnimation() > 0 }" class="button play">Play</span>
+                <span data-bind="click: stopAnimation, css: { disabled: timeLeftInAnimation() == 0 }" class="button stop">Stop</span>
             </div>
 
             <div id="playheadWrapper">
