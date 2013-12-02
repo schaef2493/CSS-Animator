@@ -56,6 +56,15 @@ function layer(id) {
 		setTimeout(function() { mainVM.seekAnimation(); }, 10);
 	};
 
+	self.removeBadAttributes = function() {
+		var attrs = self.attributes();
+		for (var i=0; i<attrs.length; i++) {
+			if ((attrs[i].property() == "") || (attrs[i].value() == "")) {
+				attrs[i].parent().removeAttribute(attrs[i]);
+			}
+		}
+	};
+
 	self.removeAttribute = function(attribute) {
 		for (var i=0; i<self.keyframes().length; i++) {
 			for (var n=0; n<self.keyframes()[i].attributes().length; n++) {
@@ -228,12 +237,16 @@ function attribute(property, value) {
 
 	// Keep current value updated when value changes
 	self.value.subscribe(function() {
-		self.updateCurrentValue();
+		if ((self.property() != "") && (self.value() != "")) {
+			self.updateCurrentValue();
+		}
 	}, this);
 
 	// Keep current value updated when playhead moves
 	mainVM.playheadPosition.subscribe(function() {
-		self.updateCurrentValue();
+		if ((self.property() != "") && (self.value() != "")) {
+			self.updateCurrentValue();
+		}
 	}, this);
 
 	self.editProperty = function() { self.editingProperty(true); };
@@ -340,7 +353,6 @@ function AnimationViewModel() {
 	self.numLayers = 0;
 
 	self.editLength = function() {
-		console.log('edit length'); 
 		self.editingLength(true);
 	};
 
@@ -407,6 +419,12 @@ function AnimationViewModel() {
 	self.playAnimation = function() {
 		// Temporary fix for playback errors
 		self.stopAnimation();
+
+		// Remove attributes with invalid data
+		var layers = self.layers();
+		for (var i=0; i<layers.length; i++) {
+			layers[i].removeBadAttributes();
+	    }
 
 		$('.animationElement').css('-webkit-animation-play-state', 'paused');
 		$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
@@ -564,17 +582,9 @@ function AnimationViewModel() {
 		}
 	});
 
-}
-
-function testAnimation() {
-	mainVM.addLayer();
-	mainVM.layers()[0].addKeyframe(0);
-	mainVM.layers()[0].keyframes()[0].addAttribute('margin-left', '0px');
-	mainVM.layers()[0].addKeyframe(1);
-	mainVM.layers()[0].keyframes()[1].addAttribute('margin-left', '710px');
+	// Add an intial layer
+	self.addLayer();
 }
 
 var mainVM = new AnimationViewModel();
 ko.applyBindings(mainVM);
-
-testAnimation();

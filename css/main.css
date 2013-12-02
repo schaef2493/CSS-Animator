@@ -266,26 +266,28 @@ textarea {
     right: 15px;
     top: 14px;
     width: 51px;
-    height: 21px;
+    height: 22px;
     border-radius: 4px;
-    background: #A0A0A0;
-    color: #FFF;
+    background: #2B2B2B;
+    border: 1px solid #212021;
+    color: #3F3E40;
     text-align: center;
     font-size: 10pt;
     padding-top: 2px;
-    opacity: 0;
 }
 
 .saveBtn.active {
-    opacity: 1;
+    background: #212021;
+    border: 1px solid #2ecc71;
+    color: #FFF;
 }
 
 .deleteBtn {
     position: absolute;
-    right: 15px;
+    right: 75px;
     top: 14px;
     width: 23px;
-    height: 23px;
+    height: 22px;
     border-radius: 4px;
     background: #212021;
     color: #FFF;
@@ -312,7 +314,7 @@ span.length, input.length, span.lengthLabel {
 }
 
 span.lengthLabel {
-    right: 60px;
+    right: 65px;
 }
 
 input.length {
