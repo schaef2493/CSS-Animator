@@ -9,6 +9,9 @@ function layer(id) {
 	var self = this;
 	self.id = id;
 	self.keyframes = ko.observableArray([]);
+	self.sortFunction = ko.observable(function(a, b){
+        return a.property() == b.property() ? 0 : (a.property() < b.property() ? -1 : 1);
+    });
 	self.attributes = ko.computed(function() {
 		var activeAttrs = [];
 		var attrs = [];
@@ -37,6 +40,7 @@ function layer(id) {
 		    return item.property();
 		})
 
+		attrs = attrs.sort(self.sortFunction());
 		return attrs;
 	}, this);
 
@@ -184,10 +188,14 @@ function keyframe(percentage) {
 	}, this);
 	self.selected = ko.observable(false);
 
-	self.addAttribute = function(property, value) {
+	self.addAttribute = function(property, value, propertySet) {
 		var newAttr = new attribute(property, value);
 		newAttr.parent(self);
-		newAttr.editingProperty(true);
+		if (propertySet == true) {
+			newAttr.propertySet(true);
+		} else {
+			newAttr.editingProperty(true);
+		}
 		self.attributes.push(newAttr);
 	};
 
@@ -209,6 +217,7 @@ function attribute(property, value) {
 	var self = this;
 	self.parent = ko.observable(null);
 	self.property = ko.observable(property);
+	self.propertySet = ko.observable(false);
 	self.value = ko.observable(value);
 	self.currentValue = ko.observable(self.value());
 	self.editingProperty = ko.observable(false);
@@ -227,19 +236,28 @@ function attribute(property, value) {
 		self.updateCurrentValue();
 	}, this);
 
-	self.editProperty = function() { this.editingProperty(true) };
-	
-	self.editValue = function() { this.editingValue(true) };
+	self.editProperty = function() { self.editingProperty(true); };
+	self.editValue = function() { self.editingValue(true) };
+
+	self.clearUnsavedChanges = function() {
+		setTimeout(function() { self.updateCurrentValue(); }, 100);
+	};
 
 	self.save = function() {
-		console.log('save!');
+		// Data valid?
+		if ((self.property() == '') || (self.currentValue() == '')) {
+			return;
+		}
+
+		self.propertySet(true);
+
 		// New keyframe needed?
 		if (!self.parent().active()) {
 			// Find active keyframe
 			var activeFound = false;
 			for (var i=0; i<mainVM.selectedLayer().keyframes().length; i++) {
 				if (mainVM.selectedLayer().keyframes()[i].active()) {
-					mainVM.selectedLayer().keyframes()[i].addAttribute(self.property(), self.currentValue());
+					mainVM.selectedLayer().keyframes()[i].addAttribute(self.property(), self.currentValue(), true);
 					activeFound = true;
 					break;
 				}
@@ -248,7 +266,7 @@ function attribute(property, value) {
 			if (!activeFound) {
  				mainVM.selectedLayer().addKeyframe(mainVM.playheadPosition());
 				var numKeyframes = mainVM.selectedLayer().keyframes().length;
-				mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue());
+				mainVM.selectedLayer().keyframes()[numKeyframes-1].addAttribute(self.property(), self.currentValue(), true);
 			}
 		} else {
 			self.value(self.currentValue());
@@ -260,8 +278,8 @@ function attribute(property, value) {
 
 		// Update stage
 		mainVM.updateKeyframeAnimations();
-		setTimeout(function() { mainVM.seekAnimation(); }, 10);
-		setTimeout(function() { self.updateCurrentValue(); }, 10);
+		setTimeout(function() { mainVM.seekAnimation(); }, 30);
+		setTimeout(function() { self.updateCurrentValue(); }, 30);
 	};
 
 	self.updateCurrentValue = function() {
@@ -269,16 +287,16 @@ function attribute(property, value) {
 			self.currentValue(self.value());
 		} else {
 			// Get current value
-			var layerID = mainVM.selectedLayer().id;
-			var newValue = $('#layer' + layerID).css(self.property());
-
-			// Round long numbers for display
-			if (newValue.indexOf('px') != -1) {
-				newValue = newValue.replace('px', '');
-				newValue = Math.round(newValue) + 'px';
-			}
-
-			self.currentValue(newValue);
+ 			var layerID = mainVM.selectedLayer().id;
+ 			var newValue = $('#layer' + layerID).css(self.property());
+ 
+ 			// Round long numbers for display
+ 			if (newValue.indexOf('px') != -1) {
+ 				newValue = newValue.replace('px', '');
+ 				newValue = Math.round(newValue) + 'px';
+ 			}
+ 
+ 			self.currentValue(newValue);
 		}
 	};
 
@@ -294,7 +312,8 @@ function attribute(property, value) {
 
 	self.valKeypress = function(data, e) {
         return true;
-	};
+ 	};
+
 }
 
 /* ==========================================================================
@@ -303,9 +322,8 @@ function attribute(property, value) {
 
 function AnimationViewModel() {
 	var self = this;
-
-	// TODO: Make this number not hardcoded
 	self.length = ko.observable(5000); // milliseconds
+	self.editingLength = ko.observable(false);
 	self.playheadPosition = ko.observable(0); // [0..1]
 	self.playheadTime = ko.computed(function() {
 		if (self.playheadPosition() == 1) {
@@ -320,6 +338,11 @@ function AnimationViewModel() {
 	self.selectedKeyframe = ko.observable(null);
 	self.selectedLayer = ko.observableArray([]);
 	self.numLayers = 0;
+
+	self.editLength = function() {
+		console.log('edit length'); 
+		self.editingLength(true);
+	};
 
 	self.addLayer = function() {
 		self.layers.push(new layer(self.numLayers));
@@ -338,7 +361,7 @@ function AnimationViewModel() {
 
 		// Update stage
 		self.updateKeyframeAnimations();
-		setTimeout(function() { self.seekAnimation(); }, 10);
+		setTimeout(function() { self.seekAnimation(); }, 30);
 	};
 
 	self.setSelectedLayer = function(layer) {
@@ -382,6 +405,9 @@ function AnimationViewModel() {
 
 	// Plays the animation starting at the playhead
 	self.playAnimation = function() {
+		// Temporary fix for playback errors
+		self.stopAnimation();
+
 		$('.animationElement').css('-webkit-animation-play-state', 'paused');
 		$('.animationElement').css('-webkit-animation-delay', '-' + self.playheadTime() + 'ms');
 		setTimeout(function() { 
@@ -473,19 +499,21 @@ function AnimationViewModel() {
 		}
 	};
 
-	// Alow enter to create a new attribute
-	// $('.attributeWrap input').bind('keypress', function(e) {
-	// 	// Enter key pressed
-	// 	if (e.keyCode == 32) {
-	// 		self.selectedLayer().addAttribute('');
-	// 	}
-	// });
-
 	// Automatically resize with of attribute inputs
 	function resizeInput() {
     	$(this).attr('size', $(this).val().length);
 	}
 	$(document).on('keyup', '.attributeWrap input', resizeInput);
+
+	// Automatically save attribute changes
+	function clearUnsavedChanges() {
+		var attrs = self.selectedLayer().attributes();
+
+		for (var i=0; i<attrs.length; i++) {
+			attrs[i].clearUnsavedChanges();
+		}
+	}
+	$(document).on('blur', '.attributeWrap input', clearUnsavedChanges);
 
 	// Updates the stage based on the playhead position
 	self.seekAnimationPostThrottle = function() {

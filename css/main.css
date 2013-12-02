@@ -171,6 +171,7 @@ textarea {
 }
 
 .layerName {
+    position: relative;
     width: 340px;
     height: 100%;
     float: left;
@@ -178,6 +179,12 @@ textarea {
     padding-top: 5px;
     border-right: 1px solid #000;
     cursor: pointer;
+}
+
+.layerName .deleteBtn {
+    right: 14px;
+    top: 4px;
+    background: none;
 }
 
 .layerTimeline {
@@ -292,9 +299,38 @@ textarea {
     cursor: pointer;
 }
 
-.button.newLayer, .button.play {
+.button.newLayer, .button.play, .length, .lengthLabel {
     font-size: 10pt;
     color: #A0A0A0;
+}
+
+span.length, input.length, span.lengthLabel {
+    position: absolute;
+    z-index: 2000;
+    right: 10px;
+    margin-top: 3px;
+}
+
+span.lengthLabel {
+    right: 60px;
+}
+
+input.length {
+    border: none;
+    background: #363636;
+    color: #FFF;
+    outline: 0px;
+    padding: 2px 0px 2px 8px;
+    margin-top: 2px;
+    border-radius: 5px;
+    width: 45px;
+}
+
+span.length {
+    padding: 0px 0px 2px 8px;
+    border-radius: 5px;
+    display: inline-block;
+    right: 27px;
 }
 
 .button.stop {
