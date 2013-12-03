@@ -13,12 +13,16 @@
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
     <body>
-        <div class="modalWrapper">
-            <div class="modal"></div>
+        <div class="modalWrapper" data-bind="visible: modalVisible()">
+            <div class="modal">
+                <div class="closeBtn button" data-bind="click: hideModal">x</div>
+                <div id="code"></div>
+            </div>
         </div>
         <div class="wrapper">
             <div class="horizontalDivider">
                 <span data-bind="click: selectedLayer().addAttribute" class="button newLayer">+ New Attribute</span>
+                <span data-bind="click: generateCSS" class="button generateCSS">Generate CSS</span>
             </div>
             <div id="inspector" data-bind='foreach: selectedLayer().attributes'>
                 <div class="attributeWrap">

@@ -100,6 +100,7 @@ function layer(id) {
 		for (var i=0; i<stylesheet.cssRules.length; i++) {
 			if ((stylesheet.cssRules[i].name == "layer" + self.id) || (stylesheet.cssRules[i].selectorText == "#layer" + self.id)) {
 				stylesheet.deleteRule(i);
+				i -= 1;
 			}
 		}
 
@@ -350,6 +351,7 @@ function AnimationViewModel() {
 	self.layers = ko.observableArray([]);
 	self.selectedKeyframe = ko.observable(null);
 	self.selectedLayer = ko.observableArray([]);
+	self.modalVisible = ko.observable(false);
 	self.numLayers = 0;
 
 	self.editLength = function() {
@@ -479,6 +481,41 @@ function AnimationViewModel() {
 		self.timeLeftInAnimation(0);
 		self.playheadAnimationStart = null;
 	}
+
+	self.generateCSS = function() {
+		self.modalVisible(true);
+
+		var stylesheet = document.styleSheets[document.styleSheets.length - 1];
+		var css = "";
+
+		// Delete existing keyframe animation
+		for (var i=0; i<stylesheet.cssRules.length; i++) {
+			if (stylesheet.cssRules[i].name !== undefined) {
+				if (stylesheet.cssRules[i].name.indexOf('layer') != -1) {
+					css += stylesheet.cssRules[i].cssText;
+				}
+			} else {
+				if (stylesheet.cssRules[i].cssText.indexOf('#layer') != -1) {
+					css += stylesheet.cssRules[i].cssText;
+				}
+			}
+		}
+
+		// Add animation init
+		for (var i=0; i<self.layers().length; i++) {
+			css += '<br>#layer' + self.layers()[i].id + ' { ';
+			css += '-webkit-animation: layer' + self.layers()[i].id + ' ' + self.length() + 'ms linear running; }';
+		}
+
+		// Clean up CSS
+		css = css.replace('@', '<br>@');
+		css = css.replace('#', '<br>#');
+		css = css.substring(4, css.length);
+
+		$('#code').html(css);
+	}
+
+	self.hideModal = function() { self.modalVisible(false) };
 
 	// Allow keypresses to control app
 	window.onkeydown = function(e) { 
