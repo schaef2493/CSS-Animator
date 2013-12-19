@@ -145,15 +145,21 @@ textarea {
     min-height: 400px;
     float: left;
     background: #363636;
+    overflow: hidden;
 }
 
 #timelineWrapper {
     position: relative;
     width: 100%;
-    height: 35%;
+    height: 33.2%;
     background: #363636;
-    overflow-y: scroll;
     overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+#timeline {
+    overflow-y: scroll;
+    height: calc(100% - 30px);
 }
 
 .horizontalDivider {
@@ -356,7 +362,7 @@ textarea {
 }
 
 .projects {
-    margin-left: 41.5%;
+    margin-left: 39.5%;
 }
 
 .generateCSS {

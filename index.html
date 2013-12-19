@@ -13,7 +13,7 @@
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
     <body>
-        <div class="modalWrapper" data-bind="visible: modalVisible()">
+        <div class="modalWrapper hidden" data-bind="visible: modalVisible(), css: { hidden: false }">
             <div class="modal">
                 <div class="closeBtn button" data-bind="click: hideModal">x</div>
                 <div id="code"></div>
@@ -22,7 +22,7 @@
         <div class="wrapper">
             <div class="horizontalDivider">
                 <span data-bind="click: selectedLayer().addAttribute" class="button newLayer">+ New Attribute</span>
-                <span class="button projects">Menu</span>
+                <span class="button projects">&lt; Codeframer /&gt;</span>
                 <span data-bind="click: generateCSS" class="button generateCSS">Generate CSS</span>
             </div>
             <div id="inspector" data-bind='foreach: selectedLayer().attributes'>
@@ -75,10 +75,12 @@
             <div>
         </div>
 
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.1.min.js"><\/script>')</script>
+        <script src="js/vendor/jquery-1.10.1.min.js"></script>
         <script src="js/vendor/jquery-ui-1.10.3.custom.js"></script>
+        <!--<script src="js/vendor/cycle.js"></script>-->
         <script src="js/vendor/underscore.js"></script>
         <script src="js/vendor/knockout.js"></script>
+        <!--<script src="js/vendor/knockout.mapper.js"></script>-->
         <script src="js/vendor/knockout.reactor.js"></script>
         <script src="js/main.js"></script>
     </body>

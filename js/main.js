@@ -262,7 +262,7 @@ function attribute(property, value) {
 	};
 
 	self.save = function() {
-		// Data valid?
+		// Data valid?		
 		if ((self.property() == '') || (self.currentValue() == '')) {
 			return;
 		}
@@ -594,6 +594,25 @@ function AnimationViewModel() {
 	}
 	$(document).on('blur', '.attributeWrap input', clearUnsavedChanges);
 
+	function handleClick(e) {
+		// Prevent invalid attributes
+		if ((e.target.localName != 'span') && (e.target.className != 'attributeWrap')) {
+			var layers = self.layers();
+			for (var i=0; i<layers.length; i++) {
+				layers[i].removeBadAttributes();
+		    }
+		}
+
+		// Deselect selected elements
+		if (e.target.className != 'keyframe selected') {
+			if (self.selectedKeyframe() != null) {
+				self.selectedKeyframe().selected(false);
+				self.selectedKeyframe(null);
+			}
+		}
+	}
+	$(document).on('click', handleClick);
+
 	// Updates the stage based on the playhead position
 	self.seekAnimationPostThrottle = function() {
 		$('.animationElement').addClass('invisible');
@@ -649,3 +668,7 @@ function AnimationViewModel() {
 
 var mainVM = new AnimationViewModel();
 ko.applyBindings(mainVM);
+
+window.onbeforeunload = function(){
+  return 'Are you sure you want to leave? Your animation will not be saved.';
+};
