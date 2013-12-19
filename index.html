@@ -22,6 +22,7 @@
         <div class="wrapper">
             <div class="horizontalDivider">
                 <span data-bind="click: selectedLayer().addAttribute" class="button newLayer">+ New Attribute</span>
+                <span class="button projects">Menu</span>
                 <span data-bind="click: generateCSS" class="button generateCSS">Generate CSS</span>
             </div>
             <div id="inspector" data-bind='foreach: selectedLayer().attributes'>
@@ -62,7 +63,9 @@
             <div id="timeline" data-bind='foreach: layers'>
                 <div class="layerWrap" data-bind="click: $parent.setSelectedLayer, css: { active: (id === $root.selectedLayer().id) }">
                     <div class="layerName">
-                        Layer <span data-bind="text: Number(id)+1"></span>
+                        <span data-bind="visible: !editingName(), text: name, click: editName"></span>
+                        <input data-bind="visible: editingName(), value: name, hasFocus: editingName" size="10" />
+
                         <div class="deleteBtn button" data-bind="visible: $root.layers().length > 1, click: $root.removeLayer">x</div>
                     </div>
                     <div class="layerTimeline" data-bind='foreach: keyframes'>

@@ -8,6 +8,8 @@ window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequest
 function layer(id) {
 	var self = this;
 	self.id = id;
+	self.name = ko.observable('Layer ' + (id + 1));
+	self.editingName = ko.observable(false);
 	self.keyframes = ko.observableArray([]);
 	self.sortFunction = ko.observable(function(a, b){
         return a.property() == b.property() ? 0 : (a.property() < b.property() ? -1 : 1);
@@ -43,6 +45,8 @@ function layer(id) {
 		attrs = attrs.sort(self.sortFunction());
 		return attrs;
 	}, this);
+
+	self.editName = function() { self.editingName(true); };
 
 	self.addKeyframe = function(percentage) {
 		self.keyframes.push(new keyframe(percentage));
@@ -486,7 +490,7 @@ function AnimationViewModel() {
 		self.modalVisible(true);
 
 		var stylesheet = document.styleSheets[document.styleSheets.length - 1];
-		var css = "";
+		var css = "div { width: 100px; height: 100px; }";
 
 		// Delete existing keyframe animation
 		for (var i=0; i<stylesheet.cssRules.length; i++) {
@@ -503,16 +507,36 @@ function AnimationViewModel() {
 
 		// Add animation init
 		for (var i=0; i<self.layers().length; i++) {
-			css += '<br>#layer' + self.layers()[i].id + ' { ';
+			css += '#layer' + self.layers()[i].id + ' { ';
 			css += '-webkit-animation: layer' + self.layers()[i].id + ' ' + self.length() + 'ms linear running; }';
 		}
 
+		// Add layer names
+		for (var i=0; i<self.layers().length; i++) {
+			css = self.replaceAll('layer' + self.layers()[i].id, self.camelize(self.layers()[i].name()), css);
+		}
+
 		// Clean up CSS
-		css = css.replace('@', '<br>@');
-		css = css.replace('#', '<br>#');
-		css = css.substring(4, css.length);
+		css = self.replaceAll('@', '<br><br>@', css);
+		css = self.replaceAll('#', '<br><br>#', css);
+		css = self.replaceAll('{', '{<br>', css);
+		css = self.replaceAll(';', ';<br>', css);
 
 		$('#code').html(css);
+	}
+
+	self.camelize = function(str) {
+		return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(letter, index) {
+			return index == 0 ? letter.toLowerCase() : letter.toUpperCase();
+		}).replace(/\s+/g, '');
+	}
+
+	self.escapeRegExp = function(str) {
+		return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+	}
+
+	self.replaceAll = function(find, replace, str) {
+		return str.replace(new RegExp(self.escapeRegExp(find), 'g'), replace);
 	}
 
 	self.hideModal = function() { self.modalVisible(false) };

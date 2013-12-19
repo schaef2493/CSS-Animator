@@ -210,7 +210,7 @@ textarea {
 
 .layerWrap {
     width: 100%;
-    height: 30px;
+    height: 32px;
     background: #2B2B2B;
     border-bottom: 1px solid black;
 }
@@ -350,9 +350,13 @@ textarea {
     cursor: pointer;
 }
 
-.button.newLayer, .button.play, .length, .lengthLabel, .generateCSS {
+.button.newLayer, .button.play, .length, .lengthLabel, .generateCSS, .projects {
     font-size: 10pt;
     color: #A0A0A0;
+}
+
+.projects {
+    margin-left: 41.5%;
 }
 
 .generateCSS {
@@ -372,7 +376,7 @@ span.lengthLabel {
     right: 65px;
 }
 
-input.length {
+input.length, .layerName input {
     border: none;
     background: #363636;
     color: #FFF;
@@ -383,7 +387,12 @@ input.length {
     width: 45px;
 }
 
-span.length {
+.layerName input {
+    width: 200px;
+    margin-top: -2px;
+}
+
+span.length, .layerName span {
     padding: 0px 0px 2px 8px;
     border-radius: 5px;
     display: inline-block;
