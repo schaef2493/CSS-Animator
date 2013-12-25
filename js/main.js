@@ -736,13 +736,16 @@ $(document).ready(function() {
 	};
 	BrowserDetect.init();
 
-	if ((BrowserDetect.browser != 'Chrome') && (BrowserDetect.browser != 'Safari')) {
+	if (BrowserDetect.browser != 'Chrome') {
 		$('.wrapper').hide();
 		$('#timelineWrapper').hide();
+		$('.intro .buttonWrap').hide();
 		$('#browserWarning').show();
 	}
 });
 
-window.onbeforeunload = function(){
-  return 'Are you sure you want to leave? Your animation will not be saved.';
+window.onbeforeunload = function() {
+  if (mainVM.layers().length > 0) {
+  	return 'Are you sure you want to leave? Your animation will not be saved.';
+  }
 };
