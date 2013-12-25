@@ -356,6 +356,7 @@ function AnimationViewModel() {
 	self.selectedKeyframe = ko.observable(null);
 	self.selectedLayer = ko.observableArray([]);
 	self.modalVisible = ko.observable(false);
+	self.introVisible = ko.observable(true);
 	self.numLayers = 0;
 
 	self.editLength = function() {
@@ -541,6 +542,33 @@ function AnimationViewModel() {
 
 	self.hideModal = function() { self.modalVisible(false) };
 
+	self.hideIntro = function() { 
+		// Add an intial layer
+		self.addLayer();
+
+		self.introVisible(false);
+	};
+
+	self.showExample = function() {
+		self.introVisible(false);
+
+		// Make sample animation
+		self.addLayer();
+		self.layers()[0].addKeyframe(0);
+		self.layers()[0].keyframes()[0].addAttribute('margin-left', '0px');
+		self.layers()[0].keyframes()[0].addAttribute('margin-top', '0px');
+		self.layers()[0].keyframes()[0].addAttribute('background', 'blue');
+		self.layers()[0].keyframes()[0].addAttribute('border-radius', '100px');
+		self.layers()[0].addKeyframe(1);
+		self.layers()[0].keyframes()[1].addAttribute('margin-left', '500px');
+		self.layers()[0].keyframes()[1].addAttribute('margin-top', '200px');
+		self.layers()[0].keyframes()[1].addAttribute('background', 'red');
+
+		for (var i=0; i<self.layers()[0].keyframes()[0].attributes().length; i++) {
+			self.layers()[0].keyframes()[0].attributes()[i].save();
+		}
+	};
+
 	// Allow keypresses to control app
 	window.onkeydown = function(e) { 
 		// Space bar pressed
@@ -661,13 +689,59 @@ function AnimationViewModel() {
 			self.playheadPosition(temp);
 		}
 	});
-
-	// Add an intial layer
-	self.addLayer();
 }
 
 var mainVM = new AnimationViewModel();
 ko.applyBindings(mainVM);
+
+$(document).ready(function() {
+  	var BrowserDetect = 
+	{
+	    init: function () 
+	    {
+	        this.browser = this.searchString(this.dataBrowser) || "Other";
+	        this.version = this.searchVersion(navigator.userAgent) ||       this.searchVersion(navigator.appVersion) || "Unknown";
+	    },
+
+	    searchString: function (data) 
+	    {
+	        for (var i=0 ; i < data.length ; i++)   
+	        {
+	            var dataString = data[i].string;
+	            this.versionSearchString = data[i].subString;
+
+	            if (dataString.indexOf(data[i].subString) != -1)
+	            {
+	                return data[i].identity;
+	            }
+	        }
+	    },
+
+	    searchVersion: function (dataString) 
+	    {
+	        var index = dataString.indexOf(this.versionSearchString);
+	        if (index == -1) return;
+	        return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+	    },
+
+	    dataBrowser: 
+	    [
+	        { string: navigator.userAgent, subString: "Chrome",  identity: "Chrome" },
+	        { string: navigator.userAgent, subString: "MSIE",    identity: "Explorer" },
+	        { string: navigator.userAgent, subString: "Firefox", identity: "Firefox" },
+	        { string: navigator.userAgent, subString: "Safari",  identity: "Safari" },
+	        { string: navigator.userAgent, subString: "Opera",   identity: "Opera" }
+	    ]
+
+	};
+	BrowserDetect.init();
+
+	if ((BrowserDetect.browser != 'Chrome') && (BrowserDetect.browser != 'Safari')) {
+		$('.wrapper').hide();
+		$('#timelineWrapper').hide();
+		$('#browserWarning').show();
+	}
+});
 
 window.onbeforeunload = function(){
   return 'Are you sure you want to leave? Your animation will not be saved.';

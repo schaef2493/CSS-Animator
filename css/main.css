@@ -73,6 +73,26 @@ textarea {
     user-select: none;
 }
 
+#browserWarning {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background: #363636;
+    display: none;
+}
+
+#browserWarning .warning {
+    margin-top: 300px;
+    width: 610px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    font-size: 27pt;
+    font-weight: bold;
+}
+
 .modalWrapper {
     position: fixed;
     top: 0px;
@@ -89,14 +109,64 @@ textarea {
     margin-left: auto;
     margin-right: auto;
     margin-top: 7.5%;
-    background: #363636;
+    background: #2B2B2B;
     padding: 35px 35px 35px 35px;
     -webkit-user-select: text;
     -khtml-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
-    border-radius: 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+.intro {
+    text-align: center;
+    margin-top: 60px;
+    position: relative;
+}
+
+.intro h3 {
+    font-weight: normal;
+    font-size: 34pt;
+    width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+}
+
+.intro p {
+    width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom : 50px;
+    font-size: 13pt;
+    opacity: .7;
+    line-height: 1.7em;
+}
+
+.intro .buttonWrap {
+    width: 410px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.intro .button:nth-child(1) {
+    margin-right: 10px;
+}
+
+.intro .button {
+    width: 200px;
+    height: 60px;
+    border-radius: 4px;
+    border: 1px solid #212021;
+    color: #3F3E40;
+    text-align: center;
+    font-size: 15pt;
+    padding-top: 16px;
+    background: #EF9F27;
+    color: #FFF;
+    float: left;
 }
 
 .closeBtn {
@@ -363,6 +433,8 @@ textarea {
 
 .projects {
     margin-left: 39.5%;
+    opacity: 0.5;
+    font-weight: bold;
 }
 
 .generateCSS {

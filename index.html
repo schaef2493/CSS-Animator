@@ -13,6 +13,21 @@
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
     <body>
+        <div id="browserWarning">
+            <div class="warning">Sorry. Codeframer is currently only supported in Chrome and Safari.</div>
+        </div>
+        <div class="modalWrapper hidden" data-bind="visible: introVisible(), css: { hidden: false }">
+            <div class="modal">
+                <div class="intro">
+                    <h3>Codeframer is a new way to build animations for the web.</h3>
+                    <p>Codeframer allows you to design complex animations through a graphical, timeline-based editor. You can even export your animation to CSS for production use.</p>
+                    <div class="buttonWrap">
+                        <div class="button" data-bind="click: hideIntro">Begin</div>
+                        <div class="button" data-bind="click: showExample">See example</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="modalWrapper hidden" data-bind="visible: modalVisible(), css: { hidden: false }">
             <div class="modal">
                 <div class="closeBtn button" data-bind="click: hideModal">x</div>
